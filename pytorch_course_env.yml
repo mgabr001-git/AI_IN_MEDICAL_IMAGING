@@ -1,0 +1,26 @@
+name: pytorchenvAImed
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - ffmpeg
+  - python=3.10
+  - pytorch
+  - celluloid
+  - dicom2nifti
+  - jupyter
+  - imgaug
+  - tensorboard
+  - torchio
+  - torchmetrics
+  - torchvision
+  - tqdm
+  - numpy
+  - nibabel
+  - matplotlib
+  - pandas
+  - pydicom
+  - scikit-image
+  - scikit-learn
+
