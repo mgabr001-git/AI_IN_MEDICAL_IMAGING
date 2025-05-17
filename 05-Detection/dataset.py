@@ -2,9 +2,16 @@ from pathlib import Path
 import torch
 import numpy as np
 import pandas as pd
-import imgaug
-from imgaug.augmentables.bbs import BoundingBox
+# import imgaug
+# from imgaug.augmentables.bbs import BoundingBox
 
+# import torchvision
+
+from torchvision.tv_tensors import BoundingBoxes
+from torchvision.transforms import v2
+
+mu = 0.49
+std_mg = 0.082
 
 class CardiacDataset(torch.utils.data.Dataset):
 
@@ -29,47 +36,52 @@ class CardiacDataset(torch.utils.data.Dataset):
         patient = self.patients[idx]
         # Get data according to index
         data = self.labels[self.labels["name"]==patient]
-        # Extract the patiendID (the filename)
-        patientId = data["name"].item()
         
         # Get entries of given patient
         # Extract coordinates
-        bbox = []
-
+        
         x_min = data["x0"].item()
-        bbox.append(x_min)
         y_min = data["y0"].item()
-        bbox.append(y_min)
         x_max = x_min + data["w"].item()  # get xmax from width
-        bbox.append(x_max)
         y_max = y_min + data["h"].item()  # get ymax from height
-        bbox.append(y_max)
+        bbox = [x_min, y_min, x_max, y_max]
 
 
         # Load file and convert to float32
-        file_path = self.root_path/str(patientId)  # Create the path to the file
+        file_path = self.root_path/patient  # Create the path to the file
         img = np.load(f"{file_path}.npy").astype(np.float32)
-        
+       
+        # img = torch.tensor(img)
+
         
         # Apply imgaug augmentations to image and bounding box
         if self.augment:
             
-            bb = BoundingBox(x1=bbox[0], y1=bbox[1], x2=bbox[2], y2=bbox[3])
-            
+            bb = BoundingBoxes(
+            torch.tensor([bbox]),
+            format="XYXY",
+            canvas_size=(224, 224)
+            )
+
+
             ###################IMPORTANT###################
             # Fix for https://discuss.pytorch.org/t/dataloader-workers-generate-the-same-random-augmentations/28830/2
-            random_seed = torch.randint(0, 1000000, (1,))[0].item()
-            imgaug.seed(random_seed)
+            # https://github.com/pytorch/pytorch/issues/5059
+            # random_seed = torch.randint(0, 1000000, (1,)).item()
+            # imgaug.seed(random_seed) 
             #####################################################
 
-            img, aug_bbox  = self.augment(image=img, bounding_boxes=bb)
-            bbox = aug_bbox[0][0], aug_bbox[0][1], aug_bbox[1][0], aug_bbox[1][1]
-            
-            
+            # random_seed = torch.randint(0, 1000000, (1,)).item()
+            # torch.manual_seed(random_seed) 
+
+            img, aug_bbox  = self.augment(img, bb)
+            bbox = aug_bbox[0][0], aug_bbox[0][1], aug_bbox[0][2], aug_bbox[0][3]
         # Normalize the image according to the values computed in Preprocessing
-        img = (img - 0.494) / 0.252
+
+        img = (img - mu) / std_mg
 
         img = torch.tensor(img).unsqueeze(0)
-        bbox = torch.tensor(bbox)
-            
+        img = torch.tensor(img)
+        bbox  = torch.tensor(bbox)
         return img, bbox
+        
