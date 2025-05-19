@@ -1,0 +1,17 @@
+.DS_Store 
+*.nii.gz
+*.dcm 
+.notebook/
+
+*.log
+logs/
+__pycache__/
+.ipynb_checkpoints/
+weights/
+Preprocessed/
+checkpoints/
+*/.ipynb_checkpoints/
+*/*.ckpt
+*/SE000001
+Data/
+
